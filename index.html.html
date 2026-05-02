@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f0f1a">
+<title>ARK Reactor</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{--bg:#0f0f1a;--bg2:#1a1a2e;--bg3:#ffffff0a;--border:#ffffff14;--text:#e8e8f0;--muted:#94a3b8;--purple:#6366f1;--green:#22c55e;--red:#ef4444;--amber:#f59e0b;--blue:#3b82f6}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+  
+  /* HEADER */
+  .header{background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;gap:8px}
+  .header-left .title{font-weight:800;font-size:16px}
+  .header-left .sub{font-size:11px;color:var(--muted)}
+  .header-right{display:flex;gap:8px;align-items:center}
+  
+  /* BUTTONS */
+  .btn{border:none;border-radius:10px;font-weight:700;cursor:pointer;transition:opacity .15s;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+  .btn:active{opacity:.7}
+  .btn-sm{padding:6px 12px;font-size:12px}
+  .btn-md{padding:10px 18px;font-size:14px}
+  .btn-lg{padding:14px 24px;font-size:15px}
+  .btn-purple{background:var(--purple);color:#fff}
+  .btn-green{background:var(--green);color:#fff}
+  .btn-red{background:var(--red);color:#fff}
+  .btn-outline{background:transparent;border:1px solid currentColor}
+  .btn-ghost{background:var(--bg3);color:var(--muted);border:1px solid var(--border)}
+  
+  /* MAIN AREA */
+  .main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+  .scroll-area{flex:1;overflow-y:auto;padding:12px 16px;-webkit-overflow-scrolling:touch}
+  
+  /* CHAT */
+  .msg{display:flex;margin-bottom:14px;animation:fadeIn .2s ease}
+  .msg.user{justify-content:flex-end}
+  .msg.assistant{justify-content:flex-start}
+  .avatar{width:30px;height:30px;border-radius:50%;background:var(--purple);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;margin-right:8px;margin-top:2px}
+  .bubble{max-width:82%;padding:11px 14px;font-size:14px;line-height:1.6;border-radius:18px;white-space:pre-wrap}
+  .bubble.user{background:var(--purple);color:#fff;border-radius:18px 18px 4px 18px}
+  .bubble.assistant{background:var(--bg3);border:1px solid var(--border);border-radius:18px 18px 18px 4px}
+  .bubble img{max-width:100%;border-radius:8px;margin-top:8px;display:block}
+  .typing{display:flex;gap:4px;padding:4px 0}
+  .typing span{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:bounce .8s infinite}
+  .typing span:nth-child(2){animation-delay:.15s}
+  .typing span:nth-child(3){animation-delay:.3s}
+  @keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+  /* CAL ITEMS IN BUBBLE */
+  .cal-items{margin-top:10px;border-top:1px solid var(--border);padding-top:8px}
+  .cal-item{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px}
+  .cal-item-label{font-size:12px;color:var(--muted)}
+  .badge{display:inline-block;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700}
+
+  /* INPUT BAR */
+  .input-area{padding:10px 16px 16px;flex-shrink:0;background:var(--bg)}
+  .input-box{display:flex;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:10px 12px;align-items:flex-end}
+  .input-box textarea{flex:1;background:none;border:none;outline:none;color:var(--text);font-size:14px;resize:none;line-height:1.5;font-family:inherit;max-height:120px}
+  .input-box textarea::placeholder{color:var(--muted)}
+  .icon-btn{background:none;border:none;cursor:pointer;font-size:20px;padding:2px 4px;line-height:1;flex-shrink:0;color:var(--muted);border-radius:8px;transition:background .15s}
+  .icon-btn:active{background:var(--bg3)}
+  .icon-btn.recording{background:#ef444422;color:var(--red);border:1px solid var(--red);border-radius:8px;padding:2px 6px}
+  .send-btn{background:var(--purple);border:none;border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:opacity .15s}
+  .send-btn:disabled{opacity:.4}
+  .send-btn:active{opacity:.7}
+  .hint{font-size:10px;color:#ffffff25;text-align:center;margin-top:6px}
+
+  /* DASHBOARD */
+  .dash-tabs{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
+  .dash-tabs::-webkit-scrollbar{display:none}
+  .dash-tab{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s}
+  .dash-tab.active{background:var(--purple);border-color:var(--purple);color:#fff}
+  .card{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px}
+  .item-row{background:var(--bg3);border-radius:10px;padding:11px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .item-row .del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 4px;flex-shrink:0;line-height:1}
+  .progress-bar{background:#ffffff18;border-radius:99px;height:6px;overflow:hidden;margin:6px 0}
+  .progress-fill{height:100%;border-radius:99px;background:var(--purple);transition:width .4s}
+  .empty{text-align:center;padding:24px 0;color:var(--muted);font-size:13px}
+
+  /* FOCUS MODE */
+  .focus-mode{text-align:center;padding:40px 20px;display:flex;flex-direction:column;align-items:center;gap:16px}
+  .focus-mode .label{font-size:11px;letter-spacing:.12em;color:var(--muted)}
+  .focus-mode .task-title{font-size:26px;font-weight:800;line-height:1.3}
+
+  /* BOTTOM NAV */
+  .bottom-nav{background:var(--bg2);border-top:1px solid var(--border);display:flex;flex-shrink:0}
+  .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px;cursor:pointer;border:none;background:none;color:var(--muted);font-size:10px;font-weight:600;gap:4px;transition:color .15s;-webkit-tap-highlight-color:transparent}
+  .nav-btn.active{color:var(--purple)}
+  .nav-btn .icon{font-size:20px}
+
+  /* IMAGE PREVIEW */
+  .img-preview{padding:0 16px 8px;display:flex;align-items:center;gap:8px}
+  .img-preview img{height:48px;border-radius:8px;border:1px solid var(--border)}
+  .img-preview button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px}
+
+  /* STATUS BADGES */
+  .status-pending{background:#ef444422;color:var(--red);border:1px solid #ef444444}
+  .status-contacted{background:#f59e0b22;color:var(--amber);border:1px solid #f59e0b44}
+  .status-confirmed{background:#22c55e22;color:var(--green);border:1px solid #22c55e44}
+  .status-buttons{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .status-btn{padding:4px 10px;font-size:11px;font-weight:600;border-radius:6px;cursor:pointer;border:1px solid currentColor;background:transparent;transition:all .15s}
+  .status-btn.active-pending{background:var(--red);color:#fff;border-color:var(--red)}
+  .status-btn.active-contacted{background:var(--amber);color:#fff;border-color:var(--amber)}
+  .status-btn.active-confirmed{background:var(--green);color:#fff;border-color:var(--green)}
+
+  /* SCROLLBAR */
+  .scroll-area::-webkit-scrollbar{width:4px}
+  .scroll-area::-webkit-scrollbar-track{background:transparent}
+  .scroll-area::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+  @media(min-width:600px){
+    body{max-width:680px;margin:0 auto;box-shadow:0 0 40px #00000080}
+    .bubble{font-size:13px}
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="title">ARK Reactor</div>
+    <div class="sub" id="headerSub">Dr ARK · Loading...</div>
+  </div>
+  <div class="header-right">
+    <button class="btn btn-sm" id="calBtn" onclick="connectCalendar()" style="background:var(--purple);color:#fff">📅 Connect</button>
+    <button class="btn btn-sm btn-ghost" id="viewToggle" onclick="toggleView()">📋 Board</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="scroll-area" id="mainArea">
+    <!-- Chat or Dashboard rendered here -->
+  </div>
+</div>
+
+<!-- IMAGE PREVIEW -->
+<div class="img-preview" id="imgPreview" style="display:none">
+  <img id="imgThumb" src="" alt="preview">
+  <button onclick="clearImage()">✕</button>
+</div>
+
+<!-- INPUT BAR -->
+<div class="input-area" id="inputArea">
+  <div class="input-box">
+    <button class="icon-btn" onclick="document.getElementById('fileInput').click()" title="Attach">📎</button>
+    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFile(event)">
+    <button class="icon-btn" id="micBtn" onclick="toggleVoice()" title="Voice">🎤</button>
+    <textarea id="msgInput" placeholder="Talk to me — OT list, appointments, tasks, ideas..." rows="1" oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
+    <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+  <div class="hint">Tap 🎤 to speak · 📎 for image · Enter to send</div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="nav-btn active" id="nav-chat" onclick="setNav('chat')">
+    <span class="icon">💬</span>Chat
+  </button>
+  <button class="nav-btn" id="nav-today" onclick="setNav('today')">
+    <span class="icon">☀️</span>Today
+  </button>
+  <button class="nav-btn" id="nav-tasks" onclick="setNav('tasks')">
+    <span class="icon">✅</span>Tasks
+  </button>
+  <button class="nav-btn" id="nav-patients" onclick="setNav('patients')">
+    <span class="icon">🏥</span>Patients
+  </button>
+  <button class="nav-btn" id="nav-ideas" onclick="setNav('ideas')">
+    <span class="icon">💡</span>Ideas
+  </button>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────
+const GEMINI_KEY = "AIzaSyC1rA53U_9y6E5fsHmUiqCi3ViPRaH5f_E";
+const GCAL_CLIENT_ID = "866215410638-80oslcip7b8b38qchlc4jbsl41h5pls7.apps.googleusercontent.com";
+const GCAL_SCOPES = "https://www.googleapis.com/auth/calendar";
+
+// ── STATE ────────────────────────────────────────────────────
+let state = {
+  messages: [],
+  items: [],
+  calConnected: false,
+  calendarList: [],
+  focusMode: false,
+  focusTaskId: null,
+  currentNav: 'chat',
+  dashTab: 'today'
+};
+let imageData = null;
+let recognition = null;
+let isListening = false;
+let isLoading = false;
+
+// ── INIT ─────────────────────────────────────────────────────
+window.onload = () => {
+  loadState();
+  updateHeader();
+  if (state.messages.length === 0) {
+    addMessage('assistant', "Good day, Dr ARK 👋 I'm ARK Reactor — your personal command center.\n\nJust talk to me — OT lists, appointments, tasks, ideas, paste emails. I'll organise everything automatically.\n\nTap 📅 Connect to link your Google Calendar.");
+  }
+  renderView();
+  document.getElementById('msgInput').addEventListener('input', () => {
+    document.getElementById('sendBtn').disabled = !document.getElementById('msgInput').value.trim() && !imageData;
+  });
+};
+
+function updateHeader() {
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const now = new Date();
+  document.getElementById('headerSub').textContent = `Dr ARK · ${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]}`;
+}
+
+// ── STORAGE ───────────────────────────────────────────────────
+function saveState() {
+  try { localStorage.setItem('svs_v1', JSON.stringify({messages: state.messages.slice(-40), items: state.items})); } catch(e){}
+}
+function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem('svs_v1') || '{}');
+    if (s.messages) state.messages = s.messages;
+    if (s.items) state.items = s.items;
+  } catch(e){}
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────
+function setNav(nav) {
+  state.currentNav = nav;
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('nav-' + nav)?.classList.add('active');
+  const inputArea = document.getElementById('inputArea');
+  inputArea.style.display = nav === 'chat' ? 'block' : 'none';
+  renderView();
+}
+
+function toggleView() {
+  setNav(state.currentNav === 'chat' ? 'today' : 'chat');
+}
+
+// ── RENDER VIEW ───────────────────────────────────────────────
+function renderView() {
+  const area = document.getElementById('mainArea');
+  if (state.currentNav === 'chat') renderChat(area);
+  else if (state.currentNav === 'today') renderToday(area);
+  else if (state.currentNav === 'tasks') renderTasks(area);
+  else if (state.currentNav === 'patients') renderPatients(area);
+  else if (state.currentNav === 'ideas') renderIdeas(area);
+}
+
+// ── CHAT ──────────────────────────────────────────────────────
+function renderChat(area) {
+  area.innerHTML = state.messages.map((m, i) => msgHTML(m, i)).join('');
+  if (isLoading) area.innerHTML += loadingHTML();
+  area.scrollTop = area.scrollHeight;
+}
+
+function msgHTML(m, idx) {
+  const isUser = m.role === 'user';
+  let calItemsHTML = '';
+  if (m.calItems?.length > 0) {
+    calItemsHTML = `<div class="cal-items">${m.calItems.map((item, ci) => `
+      <div class="cal-item">
+        <span class="cal-item-label">${item.type==='ot_event'?'🔴':'🔵'} ${item.patient||item.title||''}</span>
+        ${item.calStatus
+          ? `<span class="badge" style="background:${item.calStatus.includes('✓')?'#22c55e22':'#ef444422'};color:${item.calStatus.includes('✓')?'var(--green)':'var(--red)'};border:1px solid ${item.calStatus.includes('✓')?'#22c55e44':'#ef444444'}">${item.calStatus}</span>`
+          : state.calConnected ? `<button class="btn btn-sm btn-green" onclick="addItemToCalendar(${idx},${ci})">+ Cal</button>` : ''
+        }
+      </div>`).join('')}</div>`;
+  }
+  const imgHTML = m.image ? `<img src="${m.image}" alt="uploaded">` : '';
+  return `<div class="msg ${m.role}">
+    ${!isUser ? `<div class="avatar">S</div>` : ''}
+    <div class="bubble ${m.role}">${escHtml(m.content)}${imgHTML}${calItemsHTML}</div>
+  </div>`;
+}
+
+function loadingHTML() {
+  return `<div class="msg assistant">
+    <div class="avatar">S</div>
+    <div class="bubble assistant"><div class="typing"><span></span><span></span><span></span></div></div>
+  </div>`;
+}
+
+function escHtml(t) {
+  return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+function addMessage(role, content, extra = {}) {
+  state.messages.push({role, content, ...extra});
+  if (state.currentNav === 'chat') renderView();
+}
+
+// ── SEND MESSAGE ──────────────────────────────────────────────
+async function sendMessage() {
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  if (!text && !imageData) return;
+  if (isLoading) return;
+
+  addMessage('user', text || '📷 Image', {image: imageData});
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('sendBtn').disabled = true;
+  clearImage();
+  isLoading = true;
+  if (state.currentNav === 'chat') renderView();
+
+  try {
+    // Check if calendar query needed first
+    const calQuery = await detectCalendarQuery(text);
+    let calContext = '';
+    if (calQuery.needed && state.calConnected) {
+      const events = await fetchCalendarEvents(calQuery.timeMin, calQuery.timeMax);
+      if (events.length > 0) {
+        calContext = `\n\n[CALENDAR DATA ${calQuery.timeMin} to ${calQuery.timeMax}]:\n` +
+          events.map(e => {
+            const d = new Date(e.start);
+            const ds = isNaN(d) ? e.start : d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+            const ts = e.start.includes('T') && !isNaN(d) ? d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '';
+            return `• [${e.calendarName}] ${ds}${ts?' @ '+ts:''} — ${e.title}`;
+          }).join('\n');
+      } else {
+        calContext = `\n\n[CALENDAR: No events found for this period]`;
+      }
+    }
+
+    const response = await callGemini(text + calContext, imageData);
+    const {reply, items, calItems} = parseGeminiResponse(response);
+
+    // Add new items to state
+    if (items.length > 0) {
+      items.forEach(item => state.items.push({...item, id: uid(), done: false}));
+    }
+
+    // Handle calendar actions
+    const processedCalItems = await Promise.all((calItems||[]).map(async item => {
+      if (item.calendar_action && state.calConnected) {
+        const result = await addEventToCalendar(item);
+        return {...item, calStatus: result.msg};
+      }
+      return item;
+    }));
+
+    const showCalItems = processedCalItems.filter(i => ['ot_event','appointment'].includes(i.type));
+    addMessage('assistant', reply, {calItems: showCalItems.length > 0 ? showCalItems : undefined});
+    saveState();
+  } catch(e) {
+    addMessage('assistant', `Error: ${e.message}`);
+  }
+  isLoading = false;
+  if (state.currentNav === 'chat') renderView();
+}
+
+// ── GEMINI API ────────────────────────────────────────────────
+const SYSTEM = `You are an intelligent executive assistant for Dr ARK, a vascular surgeon. Group practice SVS, colleagues SVS/MD/TP, locations GH/BCH/SC.
+
+Classify everything into: task, ot_event, appointment, idea, reminder, deadline, meeting, webinar.
+OT fields: patient name, surgery, incision time. Appointment fields: patient name, location, time.
+When calendar data is provided in [CALENDAR DATA] blocks, use it to answer scheduling questions accurately.
+Set calendar_action:true when user says "add to calendar" or "schedule this".
+
+After your conversational reply, output exactly this block:
+<data>{"items":[{"type":"","title":"","date":"YYYY-MM-DD or null","time":"HH:MM or null","priority":"High|Medium|Low","location":"GH|BCH|SC or null","patient":null,"surgery":null,"notes":"","calendar_action":false}],"cal_query":{"needed":false,"timeMin":"YYYY-MM-DD","timeMax":"YYYY-MM-DD"}}</data>
+
+Keep tone warm, brief, ADHD-friendly. If nothing to extract, output <data>{"items":[],"cal_query":{"needed":false}}</data>`;
+
+async function callGemini(userText, imgData) {
+  const history = state.messages.slice(-10).slice(0,-1).map(m => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: [{text: m.content || ''}]
+  }));
+
+  const body = {
+    contents: [...history, {role:'user', parts:[{text: SYSTEM + '\n\n' + (userText||'Please respond.')}, ...(imgData?[{inlineData:{mimeType:'image/jpeg',data:imgData.split(',')[1]}}]:[])]}],
+    generationConfig: {maxOutputTokens:1500, temperature:0.7}
+  };
+
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`, {
+    method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(`Gemini error ${data.error.code}: ${data.error.message}`);
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+async function detectCalendarQuery(text) {
+  const lower = text.toLowerCase();
+  const calKeywords = ['schedule','calendar','week','today','tomorrow','free','busy','appointment','ot','when','what time','conflict','slot','available'];
+  if (!calKeywords.some(k => lower.includes(k))) return {needed:false};
+  const now = new Date();
+  const nextWeek = new Date(now); nextWeek.setDate(now.getDate()+7);
+  return {needed:true, timeMin: now.toISOString().slice(0,10), timeMax: nextWeek.toISOString().slice(0,10)};
+}
+
+function parseGeminiResponse(text) {
+  const dataMatch = text.match(/<data>([\s\S]*?)<\/data>/);
+  let items = [], calItems = [];
+  if (dataMatch) {
+    try {
+      const parsed = JSON.parse(dataMatch[1]);
+      items = (parsed.items||[]).map(i => ({...i, id:uid(), done:false}));
+      calItems = items.filter(i => i.calendar_action || ['ot_event','appointment'].includes(i.type));
+    } catch(e){}
+  }
+  const reply = text.replace(/<data>[\s\S]*?<\/data>/,'').trim();
+  return {reply, items, calItems};
+}
+
+// ── GOOGLE CALENDAR ───────────────────────────────────────────
+async function connectCalendar() {
+  if (state.calConnected) return;
+  const btn = document.getElementById('calBtn');
+  btn.textContent = 'Connecting...';
+  try {
+    await loadScript('https://apis.google.com/js/api.js');
+    await loadScript('https://accounts.google.com/gsi/client');
+    await new Promise((res,rej) => gapi.load('client',{callback:res,onerror:rej}));
+    await gapi.client.init({});
+    await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest');
+    const tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GCAL_CLIENT_ID, scope: GCAL_SCOPES,
+      callback: async (resp) => {
+        if (resp.error) { btn.textContent = '⚠️ Retry'; btn.style.background='var(--red)'; return; }
+        gapi.client.setToken({access_token: resp.access_token});
+        const r = await gapi.client.calendar.calendarList.list();
+        state.calendarList = r.result.items || [];
+        state.calConnected = true;
+        btn.textContent = '📅 ✓';
+        btn.style.background = 'var(--green)';
+        addMessage('assistant', '✅ Google Calendar connected! I can now read your schedule and add events directly. Try asking "what does my week look like?"');
+        renderView();
+      }
+    });
+    tokenClient.requestAccessToken({prompt:'consent'});
+  } catch(e) {
+    btn.textContent = '⚠️ Retry'; btn.style.background='var(--red)';
+  }
+}
+
+async function fetchCalendarEvents(timeMin, timeMax) {
+  if (!state.calConnected) return [];
+  const allEvents = [];
+  for (const cal of state.calendarList) {
+    try {
+      const r = await gapi.client.calendar.events.list({
+        calendarId: cal.id, timeMin: new Date(timeMin).toISOString(),
+        timeMax: new Date(timeMax+'T23:59:59').toISOString(),
+        singleEvents:true, orderBy:'startTime', maxResults:50
+      });
+      (r.result.items||[]).forEach(ev => allEvents.push({
+        calendarName: cal.summary, title: ev.summary||'(no title)',
+        start: ev.start?.dateTime||ev.start?.date, end: ev.end?.dateTime||ev.end?.date,
+        description: ev.description||''
+      }));
+    } catch(e){}
+  }
+  return allEvents.sort((a,b) => new Date(a.start)-new Date(b.start));
+}
+
+async function addEventToCalendar(item) {
+  if (!state.calConnected) return {ok:false, msg:'Not connected'};
+  try {
+    const cal = state.calendarList.find(c => c.summary==='SVS OT List' && item.type==='ot_event')
+      || state.calendarList.find(c => c.summary==='SVS Appointments' && item.type==='appointment')
+      || {id:'primary', summary:'Personal Calendar'};
+    const summary = item.type==='ot_event' ? `OT — ${item.location||''}`.trim()
+      : item.type==='appointment' ? `${item.patient||'Appt'} — ${item.location||''}`
+      : item.title;
+    const desc = item.type==='ot_event'
+      ? `Patient: ${item.patient||''}\nSurgery: ${item.surgery||''}\nIncision: ${item.time||''}`
+      : item.type==='appointment'
+      ? `Patient: ${item.patient||''}\nLocation: ${item.location||''}\nNotes: ${item.notes||''}`
+      : item.notes||'';
+    const date = item.date || new Date().toISOString().slice(0,10);
+    let start, end;
+    if (item.time) {
+      start = {dateTime:`${date}T${item.time}:00`, timeZone:'Asia/Kolkata'};
+      const ed = new Date(`${date}T${item.time}:00`); ed.setHours(ed.getHours()+1);
+      end = {dateTime:ed.toISOString().slice(0,19), timeZone:'Asia/Kolkata'};
+    } else { start={date}; end={date}; }
+    await gapi.client.calendar.events.insert({calendarId:cal.id, resource:{summary,description:desc,start,end}});
+    return {ok:true, msg:`Added to ${cal.summary} ✓`};
+  } catch(e) { return {ok:false, msg:'Failed ✕'}; }
+}
+
+async function addItemToCalendar(msgIdx, itemIdx) {
+  const msg = state.messages[msgIdx];
+  if (!msg?.calItems) return;
+  const item = msg.calItems[itemIdx];
+  const result = await addEventToCalendar(item);
+  state.messages[msgIdx].calItems[itemIdx].calStatus = result.msg;
+  renderView();
+}
+
+// ── DASHBOARD VIEWS ───────────────────────────────────────────
+function renderToday(area) {
+  const today = new Date().toISOString().slice(0,10);
+  const tasks = state.items.filter(i => i.type==='task');
+  const otToday = state.items.filter(i => i.type==='ot_event' && i.date===today);
+  const apptToday = state.items.filter(i => i.type==='appointment' && i.date===today);
+  const pendingTasks = tasks.filter(t=>!t.done);
+  const done = tasks.filter(t=>t.done).length;
+
+  if (state.focusMode) { renderFocus(area); return; }
+
+  area.innerHTML = `
+    <div class="card" style="border-color:#6366f133">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-weight:700;font-size:15px">☀️ Today</span>
+        <span class="badge" style="background:#6366f122;color:var(--purple);border:1px solid #6366f144">${done}/${tasks.length} done</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${tasks.length?Math.round(done/tasks.length*100):0}%"></div></div>
+    </div>
+    ${otToday.map(i=>`<div class="item-row" style="border-left:3px solid var(--red)">
+      <div><div style="font-weight:700;font-size:13px">${i.patient||'OT'}</div>
+      <div style="font-size:12px;color:var(--muted)">${i.surgery||''} ${i.time?'@ '+i.time:''}</div></div>
+      <button class="del" onclick="deleteItem('${i.id}')">✕</button>
+    </div>`).join('')}
+    ${apptToday.map(i=>`<div class="item-row" style="border-left:3px solid var(--blue)">
+      <div><div style="font-weight:700;font-size:13px">${i.patient||'Appointment'}</div>
+      <div style="font-size:12px;color:var(--muted)">${i.location||''} ${i.time?'@ '+i.time:''}</div></div>
+      <button class="del" onclick="deleteItem('${i.id}')">✕</button>
+    </div>`).join('')}
+    ${pendingTasks.slice(0,5).map(i=>`<div class="item-row" style="border-left:3px solid var(--purple)">
+      <div style="display:flex;gap:10px;align-items:center;flex:1">
+        <input type="checkbox" ${i.done?'checked':''} onchange="toggleTask('${i.id}')" style="width:18px;height:18px;accent-color:var(--purple);cursor:pointer;flex-shrink:0">
+        <div>
+          <div style="font-size:13px;font-weight:600;${i.done?'text-decoration:line-through;opacity:.5':''}">${escHtml(i.title)}</div>
+          <span class="badge" style="margin-top:3px;background:${priBg(i.priority)};color:${priColor(i.priority)};border:1px solid ${priBorder(i.priority)}">${i.priority}</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="btn btn-sm btn-outline" style="color:var(--purple);border-color:var(--purple)" onclick="startFocus('${i.id}')">Focus</button>
+        <button class="del" onclick="deleteItem('${i.id}')">✕</button>
+      </div>
+    </div>`).join('')}
+    ${otToday.length===0&&apptToday.length===0&&pendingTasks.length===0?`<div class="empty">Nothing scheduled today.<br>Chat with me to add tasks!</div>`:''}
+  `;
+}
+
+function renderTasks(area) {
+  const tasks = state.items.filter(i=>i.type==='task').sort((a,b)=>({High:0,Medium:1,Low:2}[a.priority]-{High:0,Medium:1,Low:2}[b.priority]));
+  area.innerHTML = tasks.length===0 ? `<div class="empty">No tasks yet.<br>Just tell me what's on your plate!</div>` :
+    tasks.map(i=>`<div class="item-row" style="border-left:3px solid ${priColor(i.priority)}">
+      <div style="display:flex;gap:10px;align-items:flex-start;flex:1">
+        <input type="checkbox" ${i.done?'checked':''} onchange="toggleTask('${i.id}')" style="width:18px;height:18px;accent-color:var(--purple);cursor:pointer;margin-top:2px;flex-shrink:0">
+        <div>
+          <div style="font-size:13px;font-weight:600;${i.done?'text-decoration:line-through;opacity:.5':''}">${escHtml(i.title)}</div>
+          <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">
+            <span class="badge" style="background:${priBg(i.priority)};color:${priColor(i.priority)};border:1px solid ${priBorder(i.priority)}">${i.priority}</span>
+            ${i.date?`<span class="badge" style="background:#ffffff0a;color:var(--muted);border:1px solid var(--border)">${i.date}</span>`:''}
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px">
+        ${!i.done?`<button class="btn btn-sm btn-outline" style="color:var(--purple);border-color:var(--purple)" onclick="startFocus('${i.id}')">Focus</button>`:''}
+        <button class="del" onclick="deleteItem('${i.id}')">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderPatients(area) {
+  const patients = state.items.filter(i=>i.type==='appointment');
+  const counts = {Pending:0,Contacted:0,Confirmed:0};
+  patients.forEach(p=>counts[p.status||'Pending']=(counts[p.status||'Pending']||0)+1);
+  area.innerHTML = `
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <span class="badge status-pending">Pending: ${counts.Pending}</span>
+      <span class="badge status-contacted">Contacted: ${counts.Contacted}</span>
+      <span class="badge status-confirmed">Confirmed: ${counts.Confirmed}</span>
+    </div>
+    ${patients.length===0?`<div class="empty">No patients yet.<br>Tell me about appointments!</div>`:''}
+    ${patients.map(p=>`<div class="item-row" style="flex-direction:column;align-items:stretch">
+      <div style="display:flex;justify-content:space-between">
+        <div>
+          <div style="font-weight:700;font-size:14px">${escHtml(p.patient||'Patient')}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${p.location||''} ${p.date?'· '+p.date:''} ${p.time?'@ '+p.time:''}</div>
+        </div>
+        <button class="del" onclick="deleteItem('${p.id}')">✕</button>
+      </div>
+      <div class="status-buttons">
+        <button class="status-btn ${p.status==='Pending'||!p.status?'active-pending':''}" style="color:var(--red)" onclick="setPatientStatus('${p.id}','Pending')">Pending</button>
+        <button class="status-btn ${p.status==='Contacted'?'active-contacted':''}" style="color:var(--amber)" onclick="setPatientStatus('${p.id}','Contacted')">Contacted</button>
+        <button class="status-btn ${p.status==='Confirmed'?'active-confirmed':''}" style="color:var(--green)" onclick="setPatientStatus('${p.id}','Confirmed')">Confirmed</button>
+      </div>
+    </div>`).join('')}
+  `;
+}
+
+function renderIdeas(area) {
+  const ideas = state.items.filter(i=>i.type==='idea');
+  area.innerHTML = `
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:4px">💡 Ideas & Projects Parking Lot</div>
+      <div style="font-size:12px;color:var(--muted)">Captured ideas you can promote to tasks later</div>
+    </div>
+    ${ideas.length===0?`<div class="empty">No ideas yet.<br>Just tell me what's on your mind!</div>`:''}
+    ${ideas.map(i=>`<div class="item-row">
+      <div style="flex:1">
+        <div style="font-size:13px">${escHtml(i.title)}</div>
+        ${i.notes?`<div style="font-size:11px;color:var(--muted);margin-top:3px">${escHtml(i.notes)}</div>`:''}
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-purple" onclick="promoteToTask('${i.id}')">→ Task</button>
+        <button class="del" onclick="deleteItem('${i.id}')">✕</button>
+      </div>
+    </div>`).join('')}
+  `;
+}
+
+function renderFocus(area) {
+  const task = state.items.find(i=>i.id===state.focusTaskId);
+  if (!task) { state.focusMode=false; renderToday(area); return; }
+  area.innerHTML = `
+    <div class="focus-mode">
+      <div class="label">FOCUS MODE</div>
+      <div class="task-title">${escHtml(task.title)}</div>
+      <span class="badge" style="background:${priBg(task.priority)};color:${priColor(task.priority)};border:1px solid ${priBorder(task.priority)};font-size:13px;padding:4px 12px">${task.priority}</span>
+      ${task.notes?`<div style="font-size:13px;color:var(--muted)">${escHtml(task.notes)}</div>`:''}
+      <div style="display:flex;gap:12px;margin-top:8px">
+        <button class="btn btn-lg btn-green" onclick="completeFocusTask()">✓ Done</button>
+        <button class="btn btn-lg btn-ghost" onclick="exitFocus()">Exit Focus</button>
+      </div>
+    </div>`;
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────
+function toggleTask(id) {
+  const item = state.items.find(i=>i.id===id);
+  if (item) { item.done = !item.done; saveState(); renderView(); }
+}
+function deleteItem(id) {
+  state.items = state.items.filter(i=>i.id!==id);
+  saveState(); renderView();
+}
+function setPatientStatus(id, status) {
+  const item = state.items.find(i=>i.id===id);
+  if (item) { item.status = status; saveState(); renderView(); }
+}
+function startFocus(id) {
+  state.focusMode = true; state.focusTaskId = id;
+  setNav('today');
+}
+function exitFocus() {
+  state.focusMode = false; state.focusTaskId = null; renderView();
+}
+function completeFocusTask() {
+  toggleTask(state.focusTaskId); exitFocus();
+}
+function promoteToTask(id) {
+  const item = state.items.find(i=>i.id===id);
+  if (item) { item.type='task'; item.priority=item.priority||'Medium'; saveState(); setNav('tasks'); }
+}
+
+// ── PRIORITY HELPERS ──────────────────────────────────────────
+function priColor(p) { return p==='High'?'var(--red)':p==='Medium'?'var(--amber)':'var(--green)'; }
+function priBg(p) { return p==='High'?'#ef444422':p==='Medium'?'#f59e0b22':'#22c55e22'; }
+function priBorder(p) { return p==='High'?'#ef444444':p==='Medium'?'#f59e0b44':'#22c55e44'; }
+
+// ── VOICE ─────────────────────────────────────────────────────
+function toggleVoice() {
+  if (isListening) { recognition?.stop(); return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('Voice not supported. Use Chrome.'); return; }
+  recognition = new SR();
+  recognition.lang = 'en-GB'; recognition.continuous = false; recognition.interimResults = false;
+  recognition.onstart = () => { isListening=true; document.getElementById('micBtn').classList.add('recording'); document.getElementById('micBtn').textContent='⏹'; };
+  recognition.onend = () => { isListening=false; document.getElementById('micBtn').classList.remove('recording'); document.getElementById('micBtn').textContent='🎤'; };
+  recognition.onresult = e => {
+    const t = e.results[0][0].transcript;
+    const inp = document.getElementById('msgInput');
+    inp.value = (inp.value ? inp.value+' ':'')+t;
+    autoResize(inp);
+    document.getElementById('sendBtn').disabled = false;
+  };
+  recognition.onerror = () => { isListening=false; document.getElementById('micBtn').classList.remove('recording'); document.getElementById('micBtn').textContent='🎤'; };
+  recognition.start();
+}
+
+// ── FILE / IMAGE ──────────────────────────────────────────────
+function handleFile(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    imageData = ev.target.result;
+    document.getElementById('imgThumb').src = imageData;
+    document.getElementById('imgPreview').style.display = 'flex';
+    document.getElementById('sendBtn').disabled = false;
+  };
+  reader.readAsDataURL(file);
+}
+function clearImage() {
+  imageData = null;
+  document.getElementById('imgPreview').style.display = 'none';
+  document.getElementById('fileInput').value = '';
+}
+
+// ── INPUT HELPERS ─────────────────────────────────────────────
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  document.getElementById('sendBtn').disabled = !el.value.trim() && !imageData;
+}
+function handleKey(e) {
+  if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+// ── UTILS ─────────────────────────────────────────────────────
+function uid() { return Math.random().toString(36).slice(2,9); }
+function loadScript(src) {
+  return new Promise((res,rej) => {
+    if (document.querySelector(`script[src="${src}"]`)) return res();
+    const s = document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej;
+    document.head.appendChild(s);
+  });
+}
+</script>
+</body>
+</html>
