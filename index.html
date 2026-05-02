@@ -180,7 +180,7 @@
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────────
-const GEMINI_KEY = "AIzaSyDtaTB7SoekEcuD4smrKuJdqrjCgEPxI2s";
+const WORKER_URL = "https://ark-reactor-proxy.a-kunte13.workers.dev";
 const GCAL_CLIENT_ID = "866215410638-80oslcip7b8b38qchlc4jbsl41h5pls7.apps.googleusercontent.com";
 const GCAL_SCOPES = "https://www.googleapis.com/auth/calendar";
 
@@ -384,7 +384,7 @@ async function callGemini(userText, imgData) {
     generationConfig: {maxOutputTokens:1500, temperature:0.7}
   };
 
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`, {
+  const res = await fetch(WORKER_URL, {
     method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
   });
   const data = await res.json();
