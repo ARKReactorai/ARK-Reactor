@@ -291,7 +291,11 @@ function loadingHTML() {
 }
 
 function escHtml(t) {
-  return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  return (t||'')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/\n/g,'<br>');
 }
 
 function addMessage(role, content, extra = {}) {
@@ -407,9 +411,11 @@ function parseGeminiResponse(text) {
   if (dataMatch) {
     try {
       const parsed = JSON.parse(dataMatch[1]);
-      items = (parsed.items||[]).map(i => ({...i, id:uid(), done:false}));
+      items = (parsed.items||[]).map(i => ({...i, id:uid(), done:false, status: i.type==='appointment'?'Pending':undefined}));
       calItems = items.filter(i => i.calendar_action || ['ot_event','appointment'].includes(i.type));
-    } catch(e){}
+    } catch(e){ console.log('Parse error:', e, dataMatch[1]); }
+  } else {
+    console.log('No data block found in response:', text.slice(-200));
   }
   const reply = text.replace(/<data>[\s\S]*?<\/data>/,'').trim();
   return {reply, items, calItems};
