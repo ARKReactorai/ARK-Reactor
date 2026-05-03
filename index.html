@@ -384,7 +384,12 @@ async function callGemini(userText, imgData) {
   }));
 
   const body = {
-    contents: [...history, {role:'user', parts:[{text: SYSTEM + '\n\n' + (userText||'Please respond.')}, ...(imgData?[{inlineData:{mimeType:'image/jpeg',data:imgData.split(',')[1]}}]:[])]}],
+    contents: [
+      {role:'user', parts:[{text: SYSTEM}]},
+      {role:'model', parts:[{text: 'Understood. I am ARK Reactor, Dr ARK\'s executive assistant. I will always include the <data> JSON block at the end of every response.'}]},
+      ...history,
+      {role:'user', parts:[{text: (userText||'Please respond.') + (imgData ? '' : '')}, ...(imgData?[{inlineData:{mimeType:'image/jpeg',data:imgData.split(',')[1]}}]:[])]}
+    ],
     generationConfig: {maxOutputTokens:1500, temperature:0.7}
   };
 
