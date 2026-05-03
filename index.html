@@ -390,7 +390,7 @@ async function callGemini(userText, imgData) {
       ...history,
       {role:'user', parts:[{text: (userText||'Please respond.') + (imgData ? '' : '')}, ...(imgData?[{inlineData:{mimeType:'image/jpeg',data:imgData.split(',')[1]}}]:[])]}
     ],
-    generationConfig: {maxOutputTokens:1500, temperature:0.7}
+    generationConfig: {maxOutputTokens:2500, temperature:0.7}
   };
 
   const res = await fetch(WORKER_URL, {
@@ -411,18 +411,36 @@ async function detectCalendarQuery(text) {
 }
 
 function parseGeminiResponse(text) {
-  const dataMatch = text.match(/<data>([\s\S]*?)<\/data>/);
+  // Try to find complete data block
+  let dataMatch = text.match(/<data>([\s\S]*?)<\/data>/);
+  // If no closing tag, try to extract from opening tag to end
+  if (!dataMatch) {
+    const openIdx = text.indexOf('<data>');
+    if (openIdx !== -1) {
+      const jsonStr = text.slice(openIdx + 6).trim();
+      dataMatch = [null, jsonStr];
+    }
+  }
   let items = [], calItems = [];
   if (dataMatch) {
     try {
-      const parsed = JSON.parse(dataMatch[1]);
+      // Clean up the JSON string
+      let jsonStr = dataMatch[1].trim();
+      // Find the last complete } to handle truncated JSON
+      const lastBrace = jsonStr.lastIndexOf('}');
+      if (lastBrace !== -1) jsonStr = jsonStr.slice(0, lastBrace + 1);
+      const parsed = JSON.parse(jsonStr);
       items = (parsed.items||[]).map(i => ({...i, id:uid(), done:false, status: i.type==='appointment'?'Pending':undefined}));
       calItems = items.filter(i => i.calendar_action || ['ot_event','appointment'].includes(i.type));
-    } catch(e){ console.log('Parse error:', e, dataMatch[1]); }
+    } catch(e){ console.log('Parse error:', e.message); }
   } else {
     console.log('No data block found in response:', text.slice(-200));
   }
-  const reply = text.replace(/<data>[\s\S]*?<\/data>/,'').trim();
+  // Remove the data block from the reply
+  let reply = text.replace(/<data>[\s\S]*?<\/data>/g,'').trim();
+  // Also remove any unclosed data block
+  const openIdx = reply.indexOf('<data>');
+  if (openIdx !== -1) reply = reply.slice(0, openIdx).trim();
   return {reply, items, calItems};
 }
 
