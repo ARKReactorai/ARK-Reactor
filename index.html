@@ -347,7 +347,8 @@ async function sendMessage() {
 
     // Handle calendar actions
     const processedCalItems = await Promise.all((calItems||[]).map(async item => {
-      if (item.calendar_action && state.calConnected) {
+      if (!item.calendar_action) return item;
+    if (item.calendar_action && state.calConnected) {
         const result = await addEventToCalendar(item);
         return {...item, calStatus: result.msg};
       }
@@ -478,7 +479,9 @@ async function connectCalendar() {
 async function fetchCalendarEvents(timeMin, timeMax) {
   if (!state.calConnected) return [];
   const allEvents = [];
+  const skipCalendars = ['holidays in japan', 'holidays in india', 'holidays in'];
   for (const cal of state.calendarList) {
+    if (skipCalendars.some(s => cal.summary.toLowerCase().includes(s))) continue;
     try {
       const r = await gapi.client.calendar.events.list({
         calendarId: cal.id, timeMin: new Date(timeMin).toISOString(),
