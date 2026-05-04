@@ -500,8 +500,9 @@ async function addEventToCalendar(item) {
   try {
     console.log('Calendar item:', JSON.stringify(item));
     console.log('Available calendars:', state.calendarList.map(c=>c.summary));
-    const cal = state.calendarList.find(c => c.summary==='SVS OT List' && item.type==='ot_event')
-      || state.calendarList.find(c => c.summary==='SVS Appointments' && item.type==='appointment')
+    const cal = state.calendarList.find(c => c.summary.toLowerCase()==='svs ot list' && item.type==='ot_event')
+      || state.calendarList.find(c => c.summary.toLowerCase()==='svs appointments' && item.type==='appointment')
+      || state.calendarList.find(c => c.summary.toLowerCase().includes('svs'))
       || {id:'primary', summary:'Personal Calendar'};
     console.log('Using calendar:', cal.summary, cal.id);
     const summary = item.type==='ot_event' ? `OT — ${item.location||''}`.trim()
