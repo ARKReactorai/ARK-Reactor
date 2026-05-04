@@ -498,9 +498,12 @@ async function fetchCalendarEvents(timeMin, timeMax) {
 async function addEventToCalendar(item) {
   if (!state.calConnected) return {ok:false, msg:'Not connected'};
   try {
+    console.log('Calendar item:', JSON.stringify(item));
+    console.log('Available calendars:', state.calendarList.map(c=>c.summary));
     const cal = state.calendarList.find(c => c.summary==='SVS OT List' && item.type==='ot_event')
       || state.calendarList.find(c => c.summary==='SVS Appointments' && item.type==='appointment')
       || {id:'primary', summary:'Personal Calendar'};
+    console.log('Using calendar:', cal.summary, cal.id);
     const summary = item.type==='ot_event' ? `OT — ${item.location||''}`.trim()
       : item.type==='appointment' ? `${item.patient||'Appt'} — ${item.location||''}`
       : item.title;
